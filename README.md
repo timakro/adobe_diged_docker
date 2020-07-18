@@ -43,3 +43,14 @@ the directory to put the downloaded book and defaults to the current directory.
 If no instance started the download after 20 seconds the script timeouts with a
 non-zero exit status. The script can be executed from any directory and multiple
 invocations can run in parallel.
+
+DeDRM Key Retrieval
+-------------------
+
+Keys for [DeDRM](https://github.com/apprenticeharper/DeDRM_tools) can be
+generated from an authorized Adobe Digital Editions installation.
+
+    ./getkey alice
+
+An optional second argument specifies the directory to put the generated key
+file and defaults to the current directory.

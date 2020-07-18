@@ -7,7 +7,9 @@ export WINEARCH=win32
 winetricks -q corefonts
 winetricks -q windowscodecs
 winetricks -q dotnet35sp1
+winetricks -q python26
 
+wine pycrypto-2.6.1.win32-py2.6.exe
 wine ADE_2.0_Installer.exe
 
 while pgrep DigitalEditions >/dev/null; do sleep 1; done

@@ -1,0 +1,31 @@
+#!/bin/sh
+
+if [ "$#" -ne 1 ] && [ "$#" -ne 2 ]; then
+    echo "usage: getkey <tag> [<dest>]"
+    exit 1
+fi
+
+if ! (echo "$1" | grep -Eq  ^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$) || [ "$1" = "latest" ]; then
+    echo "Invalid tag name $1"
+    exit 1
+fi
+if [ -z "$(docker images -q adobe_diged_docker:$1)" ]; then
+    echo "No container adobe_diged_docker:$1"
+    exit 1
+fi
+
+if [ "$#" -eq 2 ] && ! [ -d "$2" ]; then
+    echo "Not a directory $2"
+    exit 1
+fi
+
+
+container=$(uuidgen)
+docker run --name $container "adobe_diged_docker:$1" wine .wine/drive_c/Python26/python.exe adobekey.py
+if docker cp $container:/app/adobekey_1.der "${2:-.}/adobekey_$1.der"; then
+    docker rm -f $container >/dev/null
+    exit 0
+else
+    docker rm -f $container >/dev/null
+    exit 1
+fi
