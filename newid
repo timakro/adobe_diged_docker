@@ -1,0 +1,18 @@
+#!/bin/sh
+
+if [ "$#" -ne 1 ]; then
+    echo "usage: newid <tag>"
+    exit 1
+fi
+
+if ! (echo "$1" | grep -Eq  ^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$) || [ "$1" = "latest" ]; then
+    echo "Invalid tag name $1"
+    exit 1
+fi
+
+
+docker build --tag adobe_diged_docker .
+container=$(uuidgen)
+docker run -p 127.0.0.1:5900:5900 --name $container adobe_diged_docker sh install.sh
+docker commit $container "adobe_diged_docker:$1" >/dev/null
+docker rm $container >/dev/null
