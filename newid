@@ -10,6 +10,30 @@ if ! (echo "$1" | grep -Eq  ^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$) || [ "$1" = "latest" 
     exit 1
 fi
 
+for i in \
+  http://download.adobe.com/pub/adobe/digitaleditions/ADE_2.0_Installer.exe \
+  https://raw.githubusercontent.com/apprenticeharper/DeDRM_tools/master/\
+Other_Tools/DRM_Key_Scripts/Adobe_Digital_Editions/adobekey.pyw \
+  http://www.voidspace.org.uk/python/pycrypto-2.6.1/pycrypto-2.6.1.win32-py2.6.exe
+do
+  if [ ! -f container/$(basename $i) ]; then
+    while :; do
+      echo "Please read everything on the website hosting the file $i, \
+to make sure you are compliant to download the file. \
+Are you compliant to download the file ? \
+(Please answer YES or NO)" | fold -s
+      read answer
+      [ "$answer" != "YES" -a "$answer" != "NO" ] || break
+    done
+    [ "$answer" != "YES" ] || ( cd container; wget --quiet $i; )
+    if [ ! -f container/$(basename $i) ]; then
+      echo "Could not download $i automatically. \
+Please manually copy it to container/$(basename $i) \
+and rerun this script" | fold -s
+      exit 1
+    fi
+  fi
+done
 
 docker build --tag adobe_diged_docker .
 container=$(uuidgen)

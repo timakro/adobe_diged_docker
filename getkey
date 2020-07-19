@@ -21,7 +21,7 @@ fi
 
 
 container=$(uuidgen)
-docker run --name $container "adobe_diged_docker:$1" wine .wine/drive_c/Python26/python.exe adobekey.py
+docker run --name $container "adobe_diged_docker:$1" wine .wine/drive_c/Python26/python.exe adobekey.pyw
 if docker cp $container:/app/adobekey_1.der "${2:-.}/adobekey_$1.der"; then
     docker rm -f $container >/dev/null
     exit 0
