@@ -1,0 +1,56 @@
+#!/bin/sh
+
+if [ "$#" -ne 2 ] && [ "$#" -ne 3 ]; then
+    echo "usage: bookdl <tags> <acsm> [<dest>]"
+    exit 1
+fi
+
+for tag in $(echo $1 | sed 's/,/ /g'); do
+    if ! (echo "$tag" | grep -Eq  ^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$) || [ "$tag" = "latest" ]; then
+        echo "Invalid tag name $tag"
+        exit 1
+    fi
+    if [ -z "$(docker images -q adobe_diged_docker:$tag)" ]; then
+        echo "No container adobe_diged_docker:$tag"
+        exit 1
+    fi
+done
+
+if ! [ -f "$2" ]; then
+    echo "Not a regular file $2"
+    exit 1
+fi
+
+if [ "$#" -eq 3 ] && ! [ -d "$3" ]; then
+    echo "Not a directory $3"
+    exit 1
+fi
+
+
+for tag in $(echo $1 | sed 's/,/ /g'); do
+    container=$(uuidgen)
+    docker create --name $container "adobe_diged_docker:$tag" sh run.sh >/dev/null
+    docker cp "$2" $container:/app/in.acsm
+    docker start $container >/dev/null
+    uuids="$uuids $container"
+done
+
+while :; do
+    sleep 1
+    anyrunning=false
+    for container in $uuids; do
+        if [ "$(docker container inspect -f '{{.State.Running}}' $container)" = "false" ]; then
+            if [ "$(docker container inspect -f '{{.State.ExitCode}}' $container)" = "0" ]; then
+                docker cp $container:/app/out/. "${3:-.}"
+                for container in $uuids; do docker rm -f $container >/dev/null; done
+                exit 0
+            fi
+        else
+            anyrunning=true
+        fi
+    done
+    if [ $anyrunning = false ]; then
+        for container in $uuids; do docker rm -f $container >/dev/null; done
+        exit 1
+    fi
+done
