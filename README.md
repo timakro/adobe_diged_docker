@@ -54,3 +54,10 @@ generated from an authorized Adobe Digital Editions installation.
 
 An optional second argument specifies the directory to put the generated key
 file and defaults to the current directory.
+
+Known Issues
+------------
+
+This was developed on Arch Linux and it turned out later it doesn't run on
+Debian 10. It will however work on Debian 11. My best guess is that it
+doesn't work with older kernels.
