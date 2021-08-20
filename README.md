@@ -59,5 +59,5 @@ Known Issues
 ------------
 
 This was developed on Arch Linux and it turned out later it doesn't run on
-Debian 10. It will however work on Debian 11. My best guess is that it
+Debian 10. It works on Debian 11. My best guess is that it
 doesn't work with older kernels.
