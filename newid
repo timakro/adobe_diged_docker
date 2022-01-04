@@ -12,8 +12,8 @@ fi
 
 wget -P container --no-clobber \
     http://download.adobe.com/pub/adobe/digitaleditions/ADE_2.0_Installer.exe \
-    http://www.voidspace.org.uk/python/pycrypto-2.6.1/pycrypto-2.6.1.win32-py2.6.exe \
-    https://raw.githubusercontent.com/apprenticeharper/DeDRM_tools/master/DeDRM_plugin/adobekey.py \
+    https://web.archive.org/web/20181008060718if_/http://www.voidspace.org.uk/python/pycrypto-2.6.1/pycrypto-2.6.1.win32-py2.6.exe \
+    https://raw.githubusercontent.com/apprenticeharper/DeDRM_tools/92bf51bc8f201a2d5b1e8b90b8dc033606dbcfb0/DeDRM_plugin/adobekey.py \
  || exit 1
 
 docker build --tag adobe_diged_docker .
