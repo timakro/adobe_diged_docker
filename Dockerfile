@@ -1,4 +1,4 @@
-FROM debian:buster
+FROM debian:bullseye
 
 RUN sed -i 's/ main/ main contrib non-free/' /etc/apt/sources.list
 RUN dpkg --add-architecture i386 && apt-get update && apt-get install -y \
