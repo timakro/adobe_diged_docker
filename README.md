@@ -1,8 +1,23 @@
 Adobe Digital Editions Dockerized
 =================================
 
-Runs Adobe Digital Editions 2.0.1 in a Docker container using Wine and automates
+Runs Adobe Digital Editions 4.5 in a Docker container using Wine and automates
 the downloading of e-books from ACSM files.
+
+Optional configuration
+----------------------
+
+As default port 5900 will be used for VNC. To configure another port `<port>`,
+the file cfg can be created with the line `vncport=<port>`.
+To start a vncclient automatically a the line `vncclient=<vncclient>` can be
+added. For example `vncclient=vncviewer`.
+
+Preparing Docker Image
+----------------------
+
+First a docker image is created with all needed software.
+
+    ./prepare
 
 Authorizing Adobe IDs
 ---------------------
@@ -33,14 +48,14 @@ Downloading Books
 This process of downloading e-books is fully automated and can easily be
 integrated into an existing script.
 
-    ./bookdl alice,bob mybook.acsm
+    ./bookdl alice mybook.acsm
 
-This will start the Docker containers `adobe_diged_docker:alice` and
-`adobe_diged_docker:bob` and pass the ACSM file to both instances of Adobe
+This will start the Docker container `adobe_diged_docker:alice`
+and pass the ACSM file to this instance of Adobe
 Digital Editions. Since there is no good way to detect failure we just wait for
-any instance to download the book to disk. The optional third argument specifies
+the instance to download the book to disk. The optional third argument specifies
 the directory to put the downloaded book and defaults to the current directory.
-If no instance started the download after 20 seconds the script timeouts with a
+If the instance does not start the download after 20 seconds the script timeouts with a
 non-zero exit status. The script can be executed from any directory and multiple
 invocations can run in parallel.
 
@@ -55,9 +70,28 @@ generated from an authorized Adobe Digital Editions installation.
 An optional second argument specifies the directory to put the generated key
 file and defaults to the current directory.
 
-Known Issues
-------------
+Debug
+-----
 
-This was developed on Arch Linux and it turned out later it doesn't run on
-Debian 10. It works on Debian 11. My best guess is that it
-doesn't work with older kernels.
+The scripts `prepare`, `newid`, `bookdl' and `getkey` can be called with the
+option `-d` to enable debug.
+Debug may open a docker shell for testing, to continue you have to type `exit`.
+Debug may start Adobe Digital Editions. To continue you have to click 
+file->exit in the GUI.
+
+To debug the docker image 'adobe_diged_docker:alice` created with `newid alice',
+without downloading a book or retrieving a key, just to get a shell and 
+to start Adobe Digital Editions call:
+
+    ./dbgid -d alice
+
+Backup and Restore
+------------------
+
+If it works now, it does not mean it works tomorrow:
+
+    docker save adobe_diged_docker > adobe_diged_docker.tar
+
+To restore:
+
+    docker load < adobe_diged_docker.tar

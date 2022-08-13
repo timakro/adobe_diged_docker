@@ -19,7 +19,6 @@ if [ "$#" -eq 2 ] && ! [ -d "$2" ]; then
     exit 1
 fi
 
-
 container=$(uuidgen)
 docker run --name $container "adobe_diged_docker:$1" wine .wine/drive_c/Python27/python.exe adobekey.py
 if docker cp $container:/app/adobekey_1.der "${2:-.}/adobekey_$1.der"; then

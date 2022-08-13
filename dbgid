@@ -1,27 +1,24 @@
-# newid
+# dbgid
 . $(dirname $0)/lib
 
 usage()
 {
     DEBUG=""; [ "$1" = "-d" ] && { DEBUG=1; shift; }
-    [ "$#" -eq 1 ] || err "usage: newid [-d] <tag>
+    [ "$#" -eq 1 ] || err "usage: dbgid <tag>
     -d  debug"
     tag="$1"
     check_tag "$tag"
-    srcimg="$img:latest"
+    srcimg="$img:$tag"
+    dstimg="$srcimg"
     check_img "$srcimg"
-    dstimg="$img:$tag"
     check_vncport $vncport
 }
 
 cfg
 usage "$@"
-dbg "srcimg=<$srcimg> dstimg=<$dstimg> user=<$user>"
+dbg "srcimg=dstimg=<$srcimg>"
 run_container -need-gui
 dbg_container root
-#dbg_container $user
-info "Help->Authorize Computer->Adobe"
-info "ID=...,Password...,->OK"
 start_digitaleditions
 dbg_diff_container
 commit_container

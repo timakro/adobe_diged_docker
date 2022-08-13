@@ -1,56 +1,59 @@
 #!/bin/sh
+# bookdl
+. $(dirname $0)/lib
 
-if [ "$#" -ne 2 ] && [ "$#" -ne 3 ]; then
-    echo "usage: bookdl <tags> <acsm> [<dest>]"
-    exit 1
-fi
-
-for tag in $(echo $1 | sed 's/,/ /g'); do
-    if ! (echo "$tag" | grep -Eq  ^[a-zA-Z0-9_][a-zA-Z0-9_.-]*$) || [ "$tag" = "latest" ]; then
-        echo "Invalid tag name $tag"
-        exit 1
+usage()
+{
+    DEBUG=""; [ "$1" = "-d" ] && { DEBUG=1; shift; }
+    if [ "$#" -ne 2 ] && [ "$#" -ne 3 ]; then
+        err "usage: bookdl [-d] <tag> <acsm> [<dest>]
+    -d  debug"
     fi
-    if [ -z "$(docker images -q adobe_diged_docker:$tag)" ]; then
-        echo "No container adobe_diged_docker:$tag"
-        exit 1
-    fi
+    tag="$1"
+    acsm="$2"
+    [ "$3" ] && dest="$3" || dest="."
+
+    check_tag "$tag"
+    check_file "$acsm"
+    check_dir "$dest"
+    srcimg="$img:$tag"
+    check_img "$srcimg"
+    dstimg="$img:$tag"
+    check_vncport $vncport
+}
+
+cfg
+usage "$@"
+dbg "srcimg=<$srcimg> dstimg=<$dstimg>"
+run_container
+docker cp "$acsm" $container:/app/in.acsm
+dbg_container app "after copy in.acsm"
+start_digitaleditions in.acsm &
+
+for i in $(seq 20); do
+    book="$(docker exec $container sh -c "find /app -newer in.acsm \
+        -name \"*.epub\" ! -name welcome.epub -print0 |
+         xargs -0 ls -t | head -1")"
+    echo "book=<$book>"
+    [ "$book" ] && break
 done
+[ $i -eq 20 ] && err "no books are downloaded"
+info "book download has started"
 
-if ! [ -f "$2" ]; then
-    echo "Not a regular file $2"
-    exit 1
-fi
-
-if [ "$#" -eq 3 ] && ! [ -d "$3" ]; then
-    echo "Not a directory $3"
-    exit 1
-fi
-
-
-for tag in $(echo $1 | sed 's/,/ /g'); do
-    container=$(uuidgen)
-    docker create --name $container "adobe_diged_docker:$tag" sh run.sh >/dev/null
-    docker cp "$2" $container:/app/in.acsm
-    docker start $container >/dev/null
-    uuids="$uuids $container"
-done
-
+# if old books are also downloaded, we have to wait
 while :; do
-    sleep 1
-    anyrunning=false
-    for container in $uuids; do
-        if [ "$(docker container inspect -f '{{.State.Running}}' $container)" = "false" ]; then
-            if [ "$(docker container inspect -f '{{.State.ExitCode}}' $container)" = "0" ]; then
-                docker cp $container:/app/out/. "${3:-.}"
-                for container in $uuids; do docker rm -f $container >/dev/null; done
-                exit 0
-            fi
-        else
-            anyrunning=true
-        fi
-    done
-    if [ $anyrunning = false ]; then
-        for container in $uuids; do docker rm -f $container >/dev/null; done
-        exit 1
-    fi
+    a="$(docker exec $container sh -c "find /app \
+        -name \"*.epub\" -print0 | xargs -0 ls -l")"
+    sleep 30
+    b="$(docker exec $container sh -c "find /app \
+        -name \"*.epub\" -print0 | xargs -0 ls -l")"
+    [ "$a" = "$b" ] && break
 done
+info "book download has stopped"
+
+book="$(docker exec $container sh -c "find /app -newer in.acsm \
+    -name \"*.epub\" ! -name welcome.epub -print0 |
+    xargs -0 ls -tr | head -1")"
+info "book <$(basename "$book")> found, copying to <$dest>"
+docker cp $container:"$book" $dest
+dbg_container app "after copying book"

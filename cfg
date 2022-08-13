@@ -1,0 +1,15 @@
+# vncport is the port to access docker from a vncclient 
+#   if unset default 5900 is used
+#
+# vncsleep is the time in sec to wait to setup vncconnection before continuing
+#   if unset default 0 is used
+#
+# if vncclient is set it will be started automatically
+#   if unset vncclient will not be started automatically
+vncport=5999
+vncclient=vncviewer 
+vncsleep=7
+
+#img="adobe_diged_docker"
+#img="winekvm"
+#user="bs"

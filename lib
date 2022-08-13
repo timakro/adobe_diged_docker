@@ -1,0 +1,152 @@
+# vim: set filetype=sh :
+
+info()
+{
+    echo "INFO: $1" | fold -s >&2
+}
+
+err() 
+{ 
+    echo "ERROR: $1" | fold -s >&2; exit 1
+    if [ "$container" ]; then
+      docker kill $container
+    fi
+}
+
+# ask <message>
+ask()
+{
+    local dummy
+    while :; do
+        echo "$1 (continue? y/n)" | fold -s >&2
+        read dummy
+        [ "$(echo " y yes j ja " | grep -i " $dummy ")" ] && return 0
+        [ "$(echo " n no nein " | grep -i " $dummy ")" ] && return 1
+    done
+}
+
+
+dbg()
+{
+    [ "$DEBUG" ] || return
+    echo "DEBUG: $1" >&2
+}
+
+# dbg_container root|app
+dbg_container()
+{
+    local msg
+    [ "$DEBUG" ] || return
+    [ "$(echo " root $user " | grep " $1 ")" ] || err "dbg_container: use: root|$user not: <$1>"
+    [ "$2" ] && msg="$2: "
+    echo "DEBUG dbg_container: $msg(type: exit)"
+    docker exec -u $1 -ti $container /bin/bash
+}
+
+cfg()
+{
+    vncport=5900
+    vncsleep=0
+    vncclient=
+    img="adobe_diged_docker"
+    user=app
+    container=$(uuidgen)
+    [ -f $(dirname $0)/cfg ] && . $(dirname $0)/cfg
+}
+
+# check_tag <tag-name>
+check_tag()
+{
+    [ "$(echo "$1" | grep -E ^[a-zA-Z0-9_][a-zA-Z0-9_.-]*)" -a \
+         "$1" != "latest" ] || err "Invalid tag name $1"
+}
+
+# check_img <docker-img>
+check_img()
+{
+    [ "$(docker image ls -q $1)" ] ||
+         err "docker image $1 is missing"
+}
+
+# check_vncport <port>
+check_vncport()
+{
+     [ ! "$(lsof -ni | grep "TCP 127.0.0.1:$1")" ] ||
+         err "Port $1 is aready used"
+}
+
+# check_file <file>
+check_file()
+{
+    if ! [ -f "$1" ]; then
+        err "Not a regular file $1"
+    fi
+}
+
+# check_dir <dir>
+check_dir()
+{
+    if [ ! -d "$1" ]; then
+        err "Not a directory $1"
+    fi
+}
+
+check_DISPLAY()
+{
+    [ "$DISPLAY" ] || err "DISPLAY not set"
+}
+
+# run_container [-need-gui]
+run_container()
+{
+    if [ "$1" = "-need-gui" -o -n "$DEBUG" ]; then
+      check_DISPLAY
+      [ ! "$vncclient" ] || { sleep $vncsleep; $vncclient localhost:$vncport; } &
+    fi
+    trap "docker kill $container" EXIT
+    docker run -d --privileged --rm -u $user -p 127.0.0.1:$vncport:5900 --name $container \
+        $srcimg tail -f /dev/null
+
+    docker exec -u root $container sh -c \
+        "find /tmp/ -mindepth 1 -maxdepth 1 | xargs -r rm -r"
+    docker exec -u $user $container sh -c "Xvfb :0 -screen 0 1024x768x24 &
+        x11vnc -q -display :0 &"
+    sleep $vncsleep
+}
+
+install_wine()
+{
+    docker exec -u $user $container sh -c "export DISPLAY=:0 WINEARCH=win32
+winetricks -q adobe_diged4
+winetricks -q python27
+wine pip install pycryptodome
+"
+}
+
+#start_digitaleditions [<file>]
+start_digitaleditions()
+{
+    info "Please exit GUI with File->Exit"
+    docker exec -u $user $container sh -c "export DISPLAY=:0 WINEARCH=win32; cd ~; wine \
+        \".wine/drive_c/Program Files/Adobe/Adobe Digital Editions 4.5/DigitalEditions.exe\" $1"
+}
+
+stop_vnc()
+{
+    docker exec -u $user $container sh -c "pkill x11vnc; pkill Xvfb"
+    docker exec -u $user $container sh -c "find /tmp/ -mindepth 1 -maxdepth 1 |\
+        xargs -r rm -r"
+}
+
+dbg_diff_container()
+{
+    [ "$DEBUG" ] || return
+    docker diff $container
+    ask "DEBUG: next step: docker commit container $dstimg" ||
+        err "dbg_diff_container: continue?: no"
+}
+
+commit_container()
+{
+    docker commit $container "$dstimg"
+}

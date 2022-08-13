@@ -1,0 +1,44 @@
+#!/bin/sh
+# prepare
+. $(dirname $0)/lib
+
+download()
+{
+  for i in \
+   https://raw.githubusercontent.com/apprenticeharper/DeDRM_tools/Python2/DeDRM_plugin/adobekey.py
+  do
+    if [ ! -f container/$(basename $i) ]; then
+      ask "Please read everything on the website hosting the file $i, \
+to make sure you are compliant to download the file. \
+Are you compliant to download the file ?" || exit 1
+      ( cd container; wget --quiet $i; )
+      if [ ! -f container/$(basename $i) ]; then
+        err "Could not download $i automatically. \
+Please manually copy it to container/$(basename $i) \
+and rerun this script"
+      fi
+    fi
+  done
+}
+
+usage()
+{
+    DEBUG=""; [ "$1" = "-d" ] && { DEBUG=1; shift; }
+    [ "$#" -eq 0 ] || err "usage: [-d] prepare
+    -d  debug"
+    srcimg="$img:latest"
+    dstimg="$srcimg"
+    check_vncport $vncport
+}
+
+cfg
+usage "$@"
+dbg "srcimg=dstimg=<$dstimg> user=<$user>"
+download
+docker build --tag $dstimg .
+run_container
+dbg_container root "after docker build"
+install_wine
+dbg_container root "after install_wine"
+dbg_diff_container
+commit_container
