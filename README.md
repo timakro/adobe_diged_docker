@@ -73,13 +73,13 @@ file and defaults to the current directory.
 Debug
 -----
 
-The scripts `prepare`, `newid`, `bookdl' and `getkey` can be called with the
+The scripts `prepare`, `newid`, `bookdl` and `getkey` can be called with the
 option `-d` to enable debug.
 Debug may open a docker shell for testing, to continue you have to type `exit`.
 Debug may start Adobe Digital Editions. To continue you have to click 
 file->exit in the GUI.
 
-To debug the docker image 'adobe_diged_docker:alice` created with `newid alice',
+To debug the docker image `adobe_diged_docker:alice` created with `newid alice`,
 without downloading a book or retrieving a key, just to get a shell and 
 to start Adobe Digital Editions call:
 
